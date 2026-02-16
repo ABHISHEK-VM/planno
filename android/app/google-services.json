@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "556997137193",
+    "project_id": "planno-39353",
+    "storage_bucket": "planno-39353.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:556997137193:android:ba3716467f7a7f07445d38",
+        "android_client_info": {
+          "package_name": "com.example.planno"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBM92303Mqf96iKrIUeDXZNiPmfY1MKFD4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
