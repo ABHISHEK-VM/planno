@@ -14,40 +14,39 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
   final GetProjectsUseCase _getProjectsUseCase;
   final CreateProjectUseCase _createProjectUseCase;
 
-  ProjectBloc(
-    this._getProjectsUseCase,
-    this._createProjectUseCase,
-  ) : super(ProjectInitial()) {
+  ProjectBloc(this._getProjectsUseCase, this._createProjectUseCase)
+    : super(ProjectInitial()) {
     on<ProjectLoadAll>(_onLoadAll);
     on<ProjectCreate>(_onCreate);
   }
 
   Future<void> _onLoadAll(
-    ProjectLoadAll event, 
-    Emitter<ProjectState> emit
+    ProjectLoadAll event,
+    Emitter<ProjectState> emit,
   ) async {
     emit(ProjectLoading());
-    final result = await _getProjectsUseCase(NoParams());
-    result.fold(
-      (failure) => emit(ProjectError(failure.message)),
-      (projects) => emit(ProjectLoaded(projects)),
+    final stream = _getProjectsUseCase(NoParams());
+
+    await emit.forEach(
+      stream,
+      onData: (data) => data.fold(
+        (failure) => ProjectError(failure.message),
+        (projects) => ProjectLoaded(projects),
+      ),
+      onError: (error, stackTrace) => ProjectError(error.toString()),
     );
   }
 
   Future<void> _onCreate(
-    ProjectCreate event, 
-    Emitter<ProjectState> emit
+    ProjectCreate event,
+    Emitter<ProjectState> emit,
   ) async {
-    final result = await _createProjectUseCase(CreateProjectParams(
-      name: event.name,
-      description: event.description,
-    ));
-    result.fold(
-      (failure) => emit(ProjectError(failure.message)),
-      (project) {
-        emit(const ProjectOperationSuccess("Project Created Successfully"));
-        add(ProjectLoadAll()); // Reload list
-      },
+    final result = await _createProjectUseCase(
+      CreateProjectParams(name: event.name, description: event.description),
     );
+    result.fold((failure) => emit(ProjectError(failure.message)), (project) {
+      emit(const ProjectOperationSuccess("Project Created Successfully"));
+      add(ProjectLoadAll()); // Reload list
+    });
   }
 }

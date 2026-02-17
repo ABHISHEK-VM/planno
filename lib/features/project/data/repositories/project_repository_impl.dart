@@ -13,13 +13,17 @@ class ProjectRepositoryImpl implements ProjectRepository {
   ProjectRepositoryImpl(this.remoteDataSource);
 
   @override
-  Future<Either<Failure, List<ProjectEntity>>> getProjects() async {
-    try {
-      final projects = await remoteDataSource.getProjects();
-      return Right(projects);
-    } catch (e) {
-      return Left(ServerFailure(e.toString()));
-    }
+  Stream<Either<Failure, List<ProjectEntity>>> getProjects() {
+    return remoteDataSource
+        .getProjects()
+        .map((projects) {
+          return Right<Failure, List<ProjectEntity>>(projects);
+        })
+        .handleError((error) {
+          return Left<Failure, List<ProjectEntity>>(
+            ServerFailure(error.toString()),
+          );
+        });
   }
 
   @override

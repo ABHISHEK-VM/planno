@@ -15,7 +15,7 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
   final GetTasksStreamUseCase _getTasksStreamUseCase;
   final CreateTaskUseCase _createTaskUseCase;
   final UpdateTaskUseCase _updateTaskUseCase;
-  
+
   StreamSubscription? _tasksSubscription;
 
   TaskBloc(
@@ -31,13 +31,15 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
   }
 
   Future<void> _onSubscriptionRequested(
-    TasksSubscriptionRequested event, 
-    Emitter<TaskState> emit
+    TasksSubscriptionRequested event,
+    Emitter<TaskState> emit,
   ) async {
     emit(TaskLoading());
     await _tasksSubscription?.cancel();
-    _tasksSubscription = _getTasksStreamUseCase(GetTasksParams(projectId: event.projectId))
-        .listen((result) {
+    _tasksSubscription =
+        _getTasksStreamUseCase(
+          GetTasksParams(projectId: event.projectId),
+        ).listen((result) {
           result.fold(
             (failure) => add(_TaskErrorOccurred(failure.message)),
             (tasks) => add(_TasksUpdated(tasks)),
@@ -46,22 +48,29 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
   }
 
   Future<void> _onCreate(TaskCreate event, Emitter<TaskState> emit) async {
-    final result = await _createTaskUseCase(CreateTaskParams(
-      projectId: event.projectId,
-      title: event.title,
-      description: event.description,
-      dueDate: event.dueDate,
-      assigneeId: event.assigneeId,
-    ));
+    final result = await _createTaskUseCase(
+      CreateTaskParams(
+        projectId: event.projectId,
+        title: event.title,
+        description: event.description,
+        dueDate: event.dueDate,
+        assigneeId: event.assigneeId,
+      ),
+    );
     result.fold(
       (failure) => emit(TaskError(failure.message)),
-      (_) => emit(const TaskOperationSuccess('Task Created Successfully')),
+      (_) {}, // Stream will update UI
     );
   }
 
-  Future<void> _onUpdateStatus(TaskUpdateStatus event, Emitter<TaskState> emit) async {
+  Future<void> _onUpdateStatus(
+    TaskUpdateStatus event,
+    Emitter<TaskState> emit,
+  ) async {
     final updatedTask = event.task.copyWith(status: event.newStatus);
-    final result = await _updateTaskUseCase(UpdateTaskParams(task: updatedTask));
+    final result = await _updateTaskUseCase(
+      UpdateTaskParams(task: updatedTask),
+    );
     result.fold(
       (failure) => emit(TaskError(failure.message)),
       (_) {}, // Stream will update UI
@@ -75,7 +84,7 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
   void _onErrorOccurred(_TaskErrorOccurred event, Emitter<TaskState> emit) {
     emit(TaskError(event.message));
   }
-  
+
   @override
   Future<void> close() {
     _tasksSubscription?.cancel();

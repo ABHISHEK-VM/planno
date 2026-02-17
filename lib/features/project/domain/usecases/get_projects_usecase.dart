@@ -7,13 +7,12 @@ import '../entities/project_entity.dart';
 import '../repositories/project_repository.dart';
 
 @lazySingleton
-class GetProjectsUseCase implements UseCase<List<ProjectEntity>, NoParams> {
+class GetProjectsUseCase {
   final ProjectRepository repository;
 
   GetProjectsUseCase(this.repository);
 
-  @override
-  Future<Either<Failure, List<ProjectEntity>>> call(NoParams params) async {
-    return await repository.getProjects();
+  Stream<Either<Failure, List<ProjectEntity>>> call(NoParams params) {
+    return repository.getProjects();
   }
 }

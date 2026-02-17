@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:json_annotation/json_annotation.dart';
 import '../../domain/entities/task_entity.dart';
 
@@ -15,9 +16,27 @@ class TaskModel extends TaskEntity {
     required super.assigneeId,
   });
 
-  factory TaskModel.fromJson(Map<String, dynamic> json) => _$TaskModelFromJson(json);
+  factory TaskModel.fromJson(Map<String, dynamic> json) {
+    return TaskModel(
+      id: json['id'] as String,
+      projectId: json['projectId'] as String,
+      title: json['title'] as String,
+      description: json['description'] as String,
+      status: $enumDecode(_$TaskStatusEnumMap, json['status']),
+      dueDate: (json['dueDate'] as Timestamp).toDate(),
+      assigneeId: json['assigneeId'] as String,
+    );
+  }
 
-  Map<String, dynamic> toJson() => _$TaskModelToJson(this);
+  Map<String, dynamic> toJson() => <String, dynamic>{
+    'id': id,
+    'projectId': projectId,
+    'title': title,
+    'description': description,
+    'status': _$TaskStatusEnumMap[status]!,
+    'dueDate': Timestamp.fromDate(dueDate),
+    'assigneeId': assigneeId,
+  };
 
   factory TaskModel.fromEntity(TaskEntity entity) {
     return TaskModel(

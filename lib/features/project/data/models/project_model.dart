@@ -7,12 +7,14 @@ part 'project_model.g.dart';
 class ProjectModel extends ProjectEntity {
   const ProjectModel({
     required super.id,
+    required super.userId,
     required super.name,
     required super.description,
     required super.createdAt,
   });
 
-  factory ProjectModel.fromJson(Map<String, dynamic> json) => _$ProjectModelFromJson(json);
+  factory ProjectModel.fromJson(Map<String, dynamic> json) =>
+      _$ProjectModelFromJson(json);
 
   Map<String, dynamic> toJson() => _$ProjectModelToJson(this);
 }

@@ -7,6 +7,7 @@ import 'package:shimmer/shimmer.dart';
 import '../../../../core/di/injection.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
+import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../bloc/project_bloc.dart';
 
 @RoutePage()
@@ -19,7 +20,32 @@ class DashboardPage extends StatelessWidget {
       create: (context) => getIt<ProjectBloc>()..add(ProjectLoadAll()),
       child: Scaffold(
         appBar: AppBar(
-          title: const Text('My Projects'),
+          title: const Text('Projects'),
+          actions: [
+            BlocBuilder<AuthBloc, AuthState>(
+              builder: (context, state) {
+                if (state is AuthAuthenticated) {
+                  final user = state.user;
+                  return Padding(
+                    padding: EdgeInsets.only(right: 16.w),
+                    child: GestureDetector(
+                      onTap: () => context.router.push(const ProfileRoute()),
+                      child: CircleAvatar(
+                        backgroundColor: AppColors.secondary,
+                        child: Text(
+                          user.name.isNotEmpty
+                              ? user.name[0].toUpperCase()
+                              : 'U',
+                          style: const TextStyle(color: Colors.white),
+                        ),
+                      ),
+                    ),
+                  );
+                }
+                return const SizedBox.shrink();
+              },
+            ),
+          ],
           centerTitle: false,
         ),
         body: BlocConsumer<ProjectBloc, ProjectState>(
@@ -49,11 +75,18 @@ class DashboardPage extends StatelessWidget {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.folder_open, size: 64.sp, color: AppColors.textSecondary),
+                      Icon(
+                        Icons.folder_open,
+                        size: 64.sp,
+                        color: AppColors.textSecondary,
+                      ),
                       SizedBox(height: 16.h),
                       Text('No projects yet', style: AppTextStyles.heading2),
                       SizedBox(height: 8.h),
-                      Text('Create one to get started!', style: AppTextStyles.bodyMedium),
+                      Text(
+                        'Create one to get started!',
+                        style: AppTextStyles.bodyMedium,
+                      ),
                     ],
                   ),
                 );
@@ -72,7 +105,9 @@ class DashboardPage extends StatelessWidget {
                     child: InkWell(
                       borderRadius: BorderRadius.circular(12.r),
                       onTap: () {
-                        context.router.push(KanbanBoardRoute(projectId: project.id));
+                        context.router.push(
+                          KanbanBoardRoute(projectId: project.id),
+                        );
                       },
                       child: Padding(
                         padding: EdgeInsets.all(16.w),
@@ -85,12 +120,18 @@ class DashboardPage extends StatelessWidget {
                                 Expanded(
                                   child: Text(
                                     project.name,
-                                    style: AppTextStyles.heading2.copyWith(fontSize: 18.sp),
+                                    style: AppTextStyles.heading2.copyWith(
+                                      fontSize: 18.sp,
+                                    ),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                   ),
                                 ),
-                                Icon(Icons.arrow_forward_ios, size: 16.sp, color: AppColors.textSecondary),
+                                Icon(
+                                  Icons.arrow_forward_ios,
+                                  size: 16.sp,
+                                  color: AppColors.textSecondary,
+                                ),
                               ],
                             ),
                             SizedBox(height: 8.h),
@@ -103,11 +144,17 @@ class DashboardPage extends StatelessWidget {
                             SizedBox(height: 12.h),
                             Row(
                               children: [
-                                Icon(Icons.calendar_today, size: 14.sp, color: AppColors.textSecondary),
+                                Icon(
+                                  Icons.calendar_today,
+                                  size: 14.sp,
+                                  color: AppColors.textSecondary,
+                                ),
                                 SizedBox(width: 4.w),
                                 Text(
                                   'Created recently', // Use Intl for real date
-                                  style: AppTextStyles.bodyMedium.copyWith(fontSize: 12.sp),
+                                  style: AppTextStyles.bodyMedium.copyWith(
+                                    fontSize: 12.sp,
+                                  ),
                                 ),
                               ],
                             ),
@@ -119,7 +166,12 @@ class DashboardPage extends StatelessWidget {
                 },
               );
             }
-            return Center(child: Text('Start by creating a project', style: AppTextStyles.bodyMedium));
+            return Center(
+              child: Text(
+                'Start by creating a project',
+                style: AppTextStyles.bodyMedium,
+              ),
+            );
           },
         ),
         floatingActionButton: Builder(
@@ -143,7 +195,9 @@ class DashboardPage extends StatelessWidget {
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16.r)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16.r),
+        ),
         title: Text('Create Project', style: AppTextStyles.heading2),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -163,12 +217,17 @@ class DashboardPage extends StatelessWidget {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
-            child: Text('Cancel', style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary)),
+            child: Text(
+              'Cancel',
+              style: AppTextStyles.bodyMedium.copyWith(
+                color: AppColors.textSecondary,
+              ),
+            ),
           ),
           ElevatedButton(
             onPressed: () {
               if (nameController.text.isNotEmpty) {
-                 context.read<ProjectBloc>().add(
+                context.read<ProjectBloc>().add(
                   ProjectCreate(
                     name: nameController.text,
                     description: descController.text,

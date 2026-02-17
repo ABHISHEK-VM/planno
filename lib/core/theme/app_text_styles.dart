@@ -4,6 +4,9 @@ import 'package:google_fonts/google_fonts.dart';
 import 'app_colors.dart';
 
 class AppTextStyles {
+  static TextStyle get h1 => heading1;
+  static TextStyle get h2 => heading2;
+
   static TextStyle get heading1 => GoogleFonts.poppins(
     fontSize: 24.sp,
     fontWeight: FontWeight.bold,
