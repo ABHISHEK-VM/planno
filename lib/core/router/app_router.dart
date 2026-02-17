@@ -2,7 +2,9 @@ import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:injectable/injectable.dart';
 import 'package:planno/features/auth/domain/repositories/auth_repository.dart';
+import 'package:planno/features/task/domain/entities/task_entity.dart';
 import 'package:planno/features/task/presentation/pages/kanban_board_page.dart';
+import 'package:planno/features/task/presentation/pages/task_details_page.dart';
 
 import '../../features/auth/presentation/pages/login_page.dart';
 import '../../features/auth/presentation/pages/signup_page.dart';
@@ -29,6 +31,10 @@ class AppRouter extends _$AppRouter {
     ),
     AutoRoute(
       page: KanbanBoardRoute.page,
+      guards: [AuthGuard(_authRepository)],
+    ),
+    AutoRoute(
+      page: TaskDetailsRoute.page,
       guards: [AuthGuard(_authRepository)],
     ),
     AutoRoute(page: ProfileRoute.page, guards: [AuthGuard(_authRepository)]),

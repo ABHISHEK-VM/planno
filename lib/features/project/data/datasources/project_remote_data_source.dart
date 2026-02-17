@@ -9,6 +9,8 @@ import '../models/project_model.dart';
 abstract class ProjectRemoteDataSource {
   Stream<List<ProjectModel>> getProjects();
   Future<ProjectModel> createProject(String name, String description);
+  Future<ProjectModel> updateProject(ProjectModel project);
+  Future<void> deleteProject(String projectId);
 }
 
 @LazySingleton(as: ProjectRemoteDataSource)
@@ -60,6 +62,28 @@ class ProjectRemoteDataSourceImpl implements ProjectRemoteDataSource {
       return project;
     } catch (e) {
       debugPrint(e.toString());
+      throw ServerFailure(e.toString());
+    }
+  }
+
+  @override
+  Future<ProjectModel> updateProject(ProjectModel project) async {
+    try {
+      await _firestore
+          .collection('projects')
+          .doc(project.id)
+          .update(project.toJson());
+      return project;
+    } catch (e) {
+      throw ServerFailure(e.toString());
+    }
+  }
+
+  @override
+  Future<void> deleteProject(String projectId) async {
+    try {
+      await _firestore.collection('projects').doc(projectId).delete();
+    } catch (e) {
       throw ServerFailure(e.toString());
     }
   }

@@ -127,10 +127,33 @@ class DashboardPage extends StatelessWidget {
                                     overflow: TextOverflow.ellipsis,
                                   ),
                                 ),
-                                Icon(
-                                  Icons.arrow_forward_ios,
-                                  size: 16.sp,
-                                  color: AppColors.textSecondary,
+                                PopupMenuButton<String>(
+                                  icon: Icon(
+                                    Icons.more_vert,
+                                    color: AppColors.textSecondary,
+                                  ),
+                                  onSelected: (value) {
+                                    if (value == 'edit') {
+                                      _showEditProjectDialog(context, project);
+                                    } else if (value == 'delete') {
+                                      _showDeleteConfirmationDialog(
+                                        context,
+                                        project.id,
+                                      );
+                                    }
+                                  },
+                                  itemBuilder: (BuildContext context) {
+                                    return [
+                                      const PopupMenuItem(
+                                        value: 'edit',
+                                        child: Text('Edit'),
+                                      ),
+                                      const PopupMenuItem(
+                                        value: 'delete',
+                                        child: Text('Delete'),
+                                      ),
+                                    ];
+                                  },
                                 ),
                               ],
                             ),
@@ -237,6 +260,95 @@ class DashboardPage extends StatelessWidget {
               }
             },
             child: const Text('Create'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showEditProjectDialog(BuildContext context, dynamic project) {
+    final nameController = TextEditingController(text: project.name);
+    final descController = TextEditingController(text: project.description);
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16.r),
+        ),
+        title: Text('Edit Project', style: AppTextStyles.heading2),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: nameController,
+              decoration: const InputDecoration(labelText: 'Project Name'),
+            ),
+            SizedBox(height: 16.h),
+            TextField(
+              controller: descController,
+              decoration: const InputDecoration(labelText: 'Description'),
+              maxLines: 3,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: Text(
+              'Cancel',
+              style: AppTextStyles.bodyMedium.copyWith(
+                color: AppColors.textSecondary,
+              ),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              if (nameController.text.isNotEmpty) {
+                final updatedProject = project.copyWith(
+                  name: nameController.text,
+                  description: descController.text,
+                );
+                context.read<ProjectBloc>().add(ProjectUpdate(updatedProject));
+                Navigator.pop(dialogContext);
+              }
+            },
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showDeleteConfirmationDialog(BuildContext context, String projectId) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16.r),
+        ),
+        title: Text('Delete Project', style: AppTextStyles.heading2),
+        content: Text(
+          'Are you sure you want to delete this project? This action cannot be undone.',
+          style: AppTextStyles.bodyMedium,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: Text(
+              'Cancel',
+              style: AppTextStyles.bodyMedium.copyWith(
+                color: AppColors.textSecondary,
+              ),
+            ),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
+            onPressed: () {
+              context.read<ProjectBloc>().add(ProjectDelete(projectId));
+              Navigator.pop(dialogContext);
+            },
+            child: const Text('Delete'),
           ),
         ],
       ),

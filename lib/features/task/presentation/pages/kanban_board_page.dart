@@ -8,6 +8,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../domain/entities/task_entity.dart';
 import '../bloc/task_bloc.dart';
+import 'task_details_page.dart';
 
 @RoutePage()
 class KanbanBoardPage extends StatelessWidget {
@@ -107,6 +108,7 @@ class KanbanBoardPage extends StatelessWidget {
                             description: descController.text,
                             dueDate: selectedDate,
                             assigneeId: 'current_user',
+                            priority: TaskPriority.medium,
                           ),
                         );
                         Navigator.pop(sheetContext);
@@ -206,41 +208,48 @@ class _KanbanViewState extends State<_KanbanView> {
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      controller: _scrollController,
-      scrollDirection: Axis.horizontal,
-      padding: EdgeInsets.all(16.w),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _TaskColumn(
-            title: 'To Do',
-            status: TaskStatus.todo,
-            tasks: widget.state.todoTasks,
-            color: AppColors.todo,
-            onDragUpdate: _onDragUpdate,
-            onDragEnd: _onDragEnd,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return SingleChildScrollView(
+          controller: _scrollController,
+          scrollDirection: Axis.horizontal,
+          padding: EdgeInsets.all(16.w),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: constraints.maxHeight),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _TaskColumn(
+                  title: 'To Do',
+                  status: TaskStatus.todo,
+                  tasks: widget.state.todoTasks,
+                  color: AppColors.todo,
+                  onDragUpdate: _onDragUpdate,
+                  onDragEnd: _onDragEnd,
+                ),
+                SizedBox(width: 16.w),
+                _TaskColumn(
+                  title: 'In Progress',
+                  status: TaskStatus.inProgress,
+                  tasks: widget.state.inProgressTasks,
+                  color: AppColors.inProgress,
+                  onDragUpdate: _onDragUpdate,
+                  onDragEnd: _onDragEnd,
+                ),
+                SizedBox(width: 16.w),
+                _TaskColumn(
+                  title: 'Done',
+                  status: TaskStatus.done,
+                  tasks: widget.state.doneTasks,
+                  color: AppColors.done,
+                  onDragUpdate: _onDragUpdate,
+                  onDragEnd: _onDragEnd,
+                ),
+              ],
+            ),
           ),
-          SizedBox(width: 16.w),
-          _TaskColumn(
-            title: 'In Progress',
-            status: TaskStatus.inProgress,
-            tasks: widget.state.inProgressTasks,
-            color: AppColors.inProgress,
-            onDragUpdate: _onDragUpdate,
-            onDragEnd: _onDragEnd,
-          ),
-          SizedBox(width: 16.w),
-          _TaskColumn(
-            title: 'Done',
-            status: TaskStatus.done,
-            tasks: widget.state.doneTasks,
-            color: AppColors.done,
-            onDragUpdate: _onDragUpdate,
-            onDragEnd: _onDragEnd,
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 }
@@ -282,7 +291,6 @@ class _TaskColumn extends StatelessWidget {
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
             children: [
               Row(
                 children: [
@@ -315,15 +323,21 @@ class _TaskColumn extends StatelessWidget {
                   ),
                 )
               else
-                ...tasks
-                    .map(
-                      (task) => _TaskCard(
-                        task: task,
-                        onDragUpdate: onDragUpdate,
-                        onDragEnd: onDragEnd,
-                      ),
-                    )
-                    .toList(),
+                Expanded(
+                  child: SingleChildScrollView(
+                    child: Column(
+                      children: tasks
+                          .map(
+                            (task) => _TaskCard(
+                              task: task,
+                              onDragUpdate: onDragUpdate,
+                              onDragEnd: onDragEnd,
+                            ),
+                          )
+                          .toList(),
+                    ),
+                  ),
+                ),
             ],
           ),
         );
@@ -345,29 +359,55 @@ class _TaskCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Draggable<TaskEntity>(
-      data: task,
-      onDragUpdate: onDragUpdate,
-      onDragEnd: onDragEnd,
-      feedback: Material(
-        elevation: 4,
-        borderRadius: BorderRadius.circular(12.r),
-        child: Container(
-          width: 280.w,
-          padding: EdgeInsets.all(12.w),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12.r),
+    return GestureDetector(
+      onTap: () {
+        final taskBloc = context.read<TaskBloc>();
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => BlocProvider.value(
+              value: taskBloc,
+              child: TaskDetailsPage(task: task),
+            ),
           ),
-          child: Text(task.title, style: AppTextStyles.bodyLarge),
+        );
+      },
+      child: LongPressDraggable<TaskEntity>(
+        data: task,
+        onDragUpdate: onDragUpdate,
+        onDragEnd: onDragEnd,
+        feedback: Material(
+          elevation: 4,
+          borderRadius: BorderRadius.circular(12.r),
+          child: Container(
+            width: 280.w,
+            padding: EdgeInsets.all(12.w),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12.r),
+            ),
+            child: Text(task.title, style: AppTextStyles.bodyLarge),
+          ),
         ),
+        child: _buildCardContent(context),
       ),
-      childWhenDragging: Opacity(opacity: 0.5, child: _buildCardContent()),
-      child: _buildCardContent(),
     );
   }
 
-  Widget _buildCardContent() {
+  Widget _buildCardContent(BuildContext context) {
+    Color priorityColor;
+    switch (task.priority) {
+      case TaskPriority.high:
+        priorityColor = AppColors.error;
+        break;
+      case TaskPriority.medium:
+        priorityColor = Colors.orange;
+        break;
+      case TaskPriority.low:
+        priorityColor = AppColors.success;
+        break;
+    }
+
     return Container(
       margin: EdgeInsets.only(bottom: 12.h),
       padding: EdgeInsets.all(12.w),
@@ -381,15 +421,41 @@ class _TaskCard extends StatelessWidget {
             offset: const Offset(0, 2),
           ),
         ],
+        border: Border(
+          left: BorderSide(color: priorityColor, width: 4.w),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            task.title,
-            style: AppTextStyles.bodyLarge.copyWith(
-              fontWeight: FontWeight.w600,
-            ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Text(
+                  task.title,
+                  style: AppTextStyles.bodyLarge.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              PopupMenuButton<String>(
+                icon: Icon(Icons.more_horiz, size: 20.sp, color: Colors.grey),
+                onSelected: (value) {
+                  if (value == 'edit') {
+                    _showEditTaskDialog(context, task);
+                  } else if (value == 'delete') {
+                    _showDeleteTaskConfirmation(context, task.id);
+                  }
+                },
+                itemBuilder: (BuildContext context) {
+                  return [
+                    const PopupMenuItem(value: 'edit', child: Text('Edit')),
+                    const PopupMenuItem(value: 'delete', child: Text('Delete')),
+                  ];
+                },
+              ),
+            ],
           ),
           SizedBox(height: 4.h),
           Text(
@@ -402,22 +468,127 @@ class _TaskCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Icon(Icons.flag_outlined, size: 16.sp, color: Colors.orange),
-              Container(
-                padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
-                decoration: BoxDecoration(
-                  color: Colors.blue[50],
-                  borderRadius: BorderRadius.circular(8.r),
-                ),
-                child: Text(
-                  'Assignee', // Replace with avatar later
-                  style: AppTextStyles.bodyMedium.copyWith(
-                    fontSize: 10.sp,
-                    color: Colors.blue,
+              Row(
+                children: [
+                  Icon(Icons.flag, size: 16.sp, color: priorityColor),
+                  SizedBox(width: 4.w),
+                  Text(
+                    task.priority.name.toUpperCase(),
+                    style: AppTextStyles.bodySmall.copyWith(
+                      color: priorityColor,
+                      fontSize: 10.sp,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
-                ),
+                ],
               ),
+              if (task.comments.isNotEmpty)
+                Row(
+                  children: [
+                    Icon(
+                      Icons.comment_outlined,
+                      size: 16.sp,
+                      color: Colors.grey,
+                    ),
+                    SizedBox(width: 4.w),
+                    Text(
+                      '${task.comments.length}',
+                      style: AppTextStyles.bodySmall.copyWith(
+                        color: Colors.grey,
+                      ),
+                    ),
+                  ],
+                ),
             ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showEditTaskDialog(BuildContext context, TaskEntity task) {
+    final titleController = TextEditingController(text: task.title);
+    final descController = TextEditingController(text: task.description);
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16.r),
+        ),
+        title: Text('Edit Task', style: AppTextStyles.heading2),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: titleController,
+              decoration: const InputDecoration(labelText: 'Title'),
+            ),
+            SizedBox(height: 16.h),
+            TextField(
+              controller: descController,
+              decoration: const InputDecoration(labelText: 'Description'),
+              maxLines: 3,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: Text(
+              'Cancel',
+              style: AppTextStyles.bodyMedium.copyWith(
+                color: AppColors.textSecondary,
+              ),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              if (titleController.text.isNotEmpty) {
+                final updatedTask = task.copyWith(
+                  title: titleController.text,
+                  description: descController.text,
+                );
+                context.read<TaskBloc>().add(TaskUpdate(updatedTask));
+                Navigator.pop(dialogContext);
+              }
+            },
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showDeleteTaskConfirmation(BuildContext context, String taskId) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16.r),
+        ),
+        title: Text('Delete Task', style: AppTextStyles.heading2),
+        content: Text(
+          'Are you sure you want to delete this task?',
+          style: AppTextStyles.bodyMedium,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: Text(
+              'Cancel',
+              style: AppTextStyles.bodyMedium.copyWith(
+                color: AppColors.textSecondary,
+              ),
+            ),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
+            onPressed: () {
+              context.read<TaskBloc>().add(TaskDelete(taskId));
+              Navigator.pop(dialogContext);
+            },
+            child: const Text('Delete'),
           ),
         ],
       ),

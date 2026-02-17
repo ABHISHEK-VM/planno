@@ -17,4 +17,30 @@ class ProjectEntity extends Equatable {
 
   @override
   List<Object?> get props => [id, userId, name, description, createdAt];
+
+  factory ProjectEntity.empty() {
+    return ProjectEntity(
+      id: '',
+      userId: '',
+      name: '',
+      description: '',
+      createdAt: DateTime.now(),
+    );
+  }
+
+  ProjectEntity copyWith({
+    String? id,
+    String? userId,
+    String? name,
+    String? description,
+    DateTime? createdAt,
+  }) {
+    return ProjectEntity(
+      id: id ?? this.id,
+      userId: userId ?? this.userId,
+      name: name ?? this.name,
+      description: description ?? this.description,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
 }

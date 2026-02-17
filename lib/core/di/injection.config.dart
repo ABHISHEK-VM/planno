@@ -39,8 +39,12 @@ import 'package:planno/features/project/domain/repositories/project_repository.d
     as _i295;
 import 'package:planno/features/project/domain/usecases/create_project_usecase.dart'
     as _i795;
+import 'package:planno/features/project/domain/usecases/delete_project_usecase.dart'
+    as _i15;
 import 'package:planno/features/project/domain/usecases/get_projects_usecase.dart'
     as _i115;
+import 'package:planno/features/project/domain/usecases/update_project_usecase.dart'
+    as _i433;
 import 'package:planno/features/project/presentation/bloc/project_bloc.dart'
     as _i32;
 import 'package:planno/features/task/data/datasources/task_remote_data_source.dart'
@@ -49,8 +53,12 @@ import 'package:planno/features/task/data/repositories/task_repository_impl.dart
     as _i756;
 import 'package:planno/features/task/domain/repositories/task_repository.dart'
     as _i514;
+import 'package:planno/features/task/domain/usecases/add_comment_usecase.dart'
+    as _i764;
 import 'package:planno/features/task/domain/usecases/create_task_usecase.dart'
     as _i536;
+import 'package:planno/features/task/domain/usecases/delete_task_usecase.dart'
+    as _i537;
 import 'package:planno/features/task/domain/usecases/get_tasks_stream_usecase.dart'
     as _i353;
 import 'package:planno/features/task/domain/usecases/update_task_usecase.dart'
@@ -103,8 +111,18 @@ extension GetItInjectableX on _i174.GetIt {
         () => _i117.LoginUseCase(gh<_i991.AuthRepository>()));
     gh.lazySingleton<_i115.GetProjectsUseCase>(
         () => _i115.GetProjectsUseCase(gh<_i295.ProjectRepository>()));
+    gh.lazySingleton<_i15.DeleteProjectUseCase>(
+        () => _i15.DeleteProjectUseCase(gh<_i295.ProjectRepository>()));
     gh.lazySingleton<_i795.CreateProjectUseCase>(
         () => _i795.CreateProjectUseCase(gh<_i295.ProjectRepository>()));
+    gh.lazySingleton<_i433.UpdateProjectUseCase>(
+        () => _i433.UpdateProjectUseCase(gh<_i295.ProjectRepository>()));
+    gh.factory<_i32.ProjectBloc>(() => _i32.ProjectBloc(
+          gh<_i115.GetProjectsUseCase>(),
+          gh<_i795.CreateProjectUseCase>(),
+          gh<_i433.UpdateProjectUseCase>(),
+          gh<_i15.DeleteProjectUseCase>(),
+        ));
     gh.factory<_i105.AuthBloc>(() => _i105.AuthBloc(
           gh<_i117.LoginUseCase>(),
           gh<_i160.SignUpUseCase>(),
@@ -113,18 +131,20 @@ extension GetItInjectableX on _i174.GetIt {
         ));
     gh.lazySingleton<_i267.UpdateTaskUseCase>(
         () => _i267.UpdateTaskUseCase(gh<_i514.TaskRepository>()));
+    gh.lazySingleton<_i537.DeleteTaskUseCase>(
+        () => _i537.DeleteTaskUseCase(gh<_i514.TaskRepository>()));
     gh.lazySingleton<_i353.GetTasksStreamUseCase>(
         () => _i353.GetTasksStreamUseCase(gh<_i514.TaskRepository>()));
     gh.lazySingleton<_i536.CreateTaskUseCase>(
         () => _i536.CreateTaskUseCase(gh<_i514.TaskRepository>()));
-    gh.factory<_i32.ProjectBloc>(() => _i32.ProjectBloc(
-          gh<_i115.GetProjectsUseCase>(),
-          gh<_i795.CreateProjectUseCase>(),
-        ));
+    gh.lazySingleton<_i764.AddCommentUseCase>(
+        () => _i764.AddCommentUseCase(gh<_i514.TaskRepository>()));
     gh.factory<_i361.TaskBloc>(() => _i361.TaskBloc(
           gh<_i353.GetTasksStreamUseCase>(),
           gh<_i536.CreateTaskUseCase>(),
           gh<_i267.UpdateTaskUseCase>(),
+          gh<_i537.DeleteTaskUseCase>(),
+          gh<_i764.AddCommentUseCase>(),
         ));
     return this;
   }

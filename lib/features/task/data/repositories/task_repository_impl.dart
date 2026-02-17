@@ -4,9 +4,11 @@ import 'package:injectable/injectable.dart';
 
 import '../../../../core/errors/failures.dart';
 import '../../domain/entities/task_entity.dart';
+import '../../domain/entities/comment_entity.dart';
 import '../../domain/repositories/task_repository.dart';
 import '../datasources/task_remote_data_source.dart';
 import '../models/task_model.dart';
+import '../models/comment_model.dart';
 
 @LazySingleton(as: TaskRepository)
 class TaskRepositoryImpl implements TaskRepository {
@@ -44,6 +46,8 @@ class TaskRepositoryImpl implements TaskRepository {
     required String description,
     required DateTime dueDate,
     required String assigneeId,
+    required TaskPriority priority,
+    List<CommentEntity> comments = const [],
   }) async {
     try {
       final newTask = TaskModel(
@@ -52,8 +56,10 @@ class TaskRepositoryImpl implements TaskRepository {
         title: title,
         description: description,
         status: TaskStatus.todo,
+        priority: priority,
         dueDate: dueDate,
         assigneeId: assigneeId,
+        comments: comments,
       );
       final result = await remoteDataSource.createTask(newTask);
       return Right(result);
@@ -67,6 +73,30 @@ class TaskRepositoryImpl implements TaskRepository {
     try {
       final taskModel = TaskModel.fromEntity(task);
       final result = await remoteDataSource.updateTask(taskModel);
+      return Right(result);
+    } catch (e) {
+      return Left(ServerFailure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> deleteTask(String taskId) async {
+    try {
+      await remoteDataSource.deleteTask(taskId);
+      return const Right(null);
+    } catch (e) {
+      return Left(ServerFailure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, CommentEntity>> addComment({
+    required String taskId,
+    required CommentEntity comment,
+  }) async {
+    try {
+      final commentModel = CommentModel.fromEntity(comment);
+      final result = await remoteDataSource.addComment(taskId, commentModel);
       return Right(result);
     } catch (e) {
       return Left(ServerFailure(e.toString()));

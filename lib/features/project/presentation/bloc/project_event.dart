@@ -18,3 +18,21 @@ class ProjectCreate extends ProjectEvent {
   @override
   List<Object> get props => [name, description];
 }
+
+class ProjectUpdate extends ProjectEvent {
+  final ProjectEntity project;
+
+  const ProjectUpdate(this.project);
+
+  @override
+  List<Object> get props => [project];
+}
+
+class ProjectDelete extends ProjectEvent {
+  final String projectId;
+
+  const ProjectDelete(this.projectId);
+
+  @override
+  List<Object> get props => [projectId];
+}

@@ -4,7 +4,9 @@ import 'package:injectable/injectable.dart';
 import '../../../../core/usecases/usecase.dart';
 import '../../domain/entities/project_entity.dart';
 import '../../domain/usecases/create_project_usecase.dart';
+import '../../domain/usecases/delete_project_usecase.dart';
 import '../../domain/usecases/get_projects_usecase.dart';
+import '../../domain/usecases/update_project_usecase.dart';
 
 part 'project_event.dart';
 part 'project_state.dart';
@@ -13,11 +15,19 @@ part 'project_state.dart';
 class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
   final GetProjectsUseCase _getProjectsUseCase;
   final CreateProjectUseCase _createProjectUseCase;
+  final UpdateProjectUseCase _updateProjectUseCase;
+  final DeleteProjectUseCase _deleteProjectUseCase;
 
-  ProjectBloc(this._getProjectsUseCase, this._createProjectUseCase)
-    : super(ProjectInitial()) {
+  ProjectBloc(
+    this._getProjectsUseCase,
+    this._createProjectUseCase,
+    this._updateProjectUseCase,
+    this._deleteProjectUseCase,
+  ) : super(ProjectInitial()) {
     on<ProjectLoadAll>(_onLoadAll);
     on<ProjectCreate>(_onCreate);
+    on<ProjectUpdate>(_onUpdate);
+    on<ProjectDelete>(_onDelete);
   }
 
   Future<void> _onLoadAll(
@@ -46,7 +56,33 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
     );
     result.fold((failure) => emit(ProjectError(failure.message)), (project) {
       emit(const ProjectOperationSuccess("Project Created Successfully"));
-      add(ProjectLoadAll()); // Reload list
+      add(ProjectLoadAll());
+    });
+  }
+
+  Future<void> _onUpdate(
+    ProjectUpdate event,
+    Emitter<ProjectState> emit,
+  ) async {
+    final result = await _updateProjectUseCase(
+      UpdateProjectParams(project: event.project),
+    );
+    result.fold((failure) => emit(ProjectError(failure.message)), (project) {
+      emit(const ProjectOperationSuccess("Project Updated Successfully"));
+      add(ProjectLoadAll());
+    });
+  }
+
+  Future<void> _onDelete(
+    ProjectDelete event,
+    Emitter<ProjectState> emit,
+  ) async {
+    final result = await _deleteProjectUseCase(
+      DeleteProjectParams(projectId: event.projectId),
+    );
+    result.fold((failure) => emit(ProjectError(failure.message)), (_) {
+      emit(const ProjectOperationSuccess("Project Deleted Successfully"));
+      add(ProjectLoadAll());
     });
   }
 }

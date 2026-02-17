@@ -5,28 +5,45 @@ import 'package:mocktail/mocktail.dart';
 import 'package:planno/core/usecases/usecase.dart';
 import 'package:planno/features/project/domain/entities/project_entity.dart';
 import 'package:planno/features/project/domain/usecases/create_project_usecase.dart';
+import 'package:planno/features/project/domain/usecases/delete_project_usecase.dart';
 import 'package:planno/features/project/domain/usecases/get_projects_usecase.dart';
+import 'package:planno/features/project/domain/usecases/update_project_usecase.dart';
 import 'package:planno/features/project/presentation/bloc/project_bloc.dart';
 
 class MockGetProjectsUseCase extends Mock implements GetProjectsUseCase {}
 
 class MockCreateProjectUseCase extends Mock implements CreateProjectUseCase {}
 
+class MockUpdateProjectUseCase extends Mock implements UpdateProjectUseCase {}
+
+class MockDeleteProjectUseCase extends Mock implements DeleteProjectUseCase {}
+
 void main() {
   late ProjectBloc projectBloc;
   late MockGetProjectsUseCase mockGetProjectsUseCase;
   late MockCreateProjectUseCase mockCreateProjectUseCase;
+  late MockUpdateProjectUseCase mockUpdateProjectUseCase;
+  late MockDeleteProjectUseCase mockDeleteProjectUseCase;
 
   setUp(() {
     mockGetProjectsUseCase = MockGetProjectsUseCase();
     mockCreateProjectUseCase = MockCreateProjectUseCase();
-    projectBloc = ProjectBloc(mockGetProjectsUseCase, mockCreateProjectUseCase);
+    mockUpdateProjectUseCase = MockUpdateProjectUseCase();
+    mockDeleteProjectUseCase = MockDeleteProjectUseCase();
+    projectBloc = ProjectBloc(
+      mockGetProjectsUseCase,
+      mockCreateProjectUseCase,
+      mockUpdateProjectUseCase,
+      mockDeleteProjectUseCase,
+    );
 
     // Register fallback value for any params if needed, though not strictly required for primitive types
     registerFallbackValue(NoParams());
     registerFallbackValue(
       const CreateProjectParams(name: 'dummy', description: 'dummy'),
     );
+    registerFallbackValue(UpdateProjectParams(project: ProjectEntity.empty()));
+    registerFallbackValue(const DeleteProjectParams(projectId: 'dummy'));
   });
 
   tearDown(() {

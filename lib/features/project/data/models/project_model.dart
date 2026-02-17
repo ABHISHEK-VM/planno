@@ -17,4 +17,14 @@ class ProjectModel extends ProjectEntity {
       _$ProjectModelFromJson(json);
 
   Map<String, dynamic> toJson() => _$ProjectModelToJson(this);
+
+  factory ProjectModel.fromEntity(ProjectEntity entity) {
+    return ProjectModel(
+      id: entity.id,
+      userId: entity.userId,
+      name: entity.name,
+      description: entity.description,
+      createdAt: entity.createdAt,
+    );
+  }
 }

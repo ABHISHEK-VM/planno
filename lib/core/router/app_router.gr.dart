@@ -49,6 +49,16 @@ abstract class _$AppRouter extends RootStackRouter {
         child: const SignUpPage(),
       );
     },
+    TaskDetailsRoute.name: (routeData) {
+      final args = routeData.argsAs<TaskDetailsRouteArgs>();
+      return AutoRoutePage<dynamic>(
+        routeData: routeData,
+        child: TaskDetailsPage(
+          key: args.key,
+          task: args.task,
+        ),
+      );
+    },
   };
 }
 
@@ -144,4 +154,42 @@ class SignUpRoute extends PageRouteInfo<void> {
   static const String name = 'SignUpRoute';
 
   static const PageInfo<void> page = PageInfo<void>(name);
+}
+
+/// generated route for
+/// [TaskDetailsPage]
+class TaskDetailsRoute extends PageRouteInfo<TaskDetailsRouteArgs> {
+  TaskDetailsRoute({
+    Key? key,
+    required TaskEntity task,
+    List<PageRouteInfo>? children,
+  }) : super(
+          TaskDetailsRoute.name,
+          args: TaskDetailsRouteArgs(
+            key: key,
+            task: task,
+          ),
+          initialChildren: children,
+        );
+
+  static const String name = 'TaskDetailsRoute';
+
+  static const PageInfo<TaskDetailsRouteArgs> page =
+      PageInfo<TaskDetailsRouteArgs>(name);
+}
+
+class TaskDetailsRouteArgs {
+  const TaskDetailsRouteArgs({
+    this.key,
+    required this.task,
+  });
+
+  final Key? key;
+
+  final TaskEntity task;
+
+  @override
+  String toString() {
+    return 'TaskDetailsRouteArgs{key: $key, task: $task}';
+  }
 }

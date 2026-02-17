@@ -1,10 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:json_annotation/json_annotation.dart';
 import '../../domain/entities/task_entity.dart';
+import 'comment_model.dart';
 
-part 'task_model.g.dart';
-
-@JsonSerializable()
 class TaskModel extends TaskEntity {
   const TaskModel({
     required super.id,
@@ -12,8 +9,10 @@ class TaskModel extends TaskEntity {
     required super.title,
     required super.description,
     required super.status,
+    required super.priority,
     required super.dueDate,
     required super.assigneeId,
+    required super.comments,
   });
 
   factory TaskModel.fromJson(Map<String, dynamic> json) {
@@ -22,9 +21,17 @@ class TaskModel extends TaskEntity {
       projectId: json['projectId'] as String,
       title: json['title'] as String,
       description: json['description'] as String,
-      status: $enumDecode(_$TaskStatusEnumMap, json['status']),
+      status: TaskStatus.values.byName(json['status'] as String),
+      priority: json['priority'] != null
+          ? TaskPriority.values.byName(json['priority'] as String)
+          : TaskPriority.medium,
       dueDate: (json['dueDate'] as Timestamp).toDate(),
       assigneeId: json['assigneeId'] as String,
+      comments:
+          (json['comments'] as List<dynamic>?)
+              ?.map((e) => CommentModel.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          [],
     );
   }
 
@@ -33,9 +40,13 @@ class TaskModel extends TaskEntity {
     'projectId': projectId,
     'title': title,
     'description': description,
-    'status': _$TaskStatusEnumMap[status]!,
+    'status': status.name,
+    'priority': priority.name,
     'dueDate': Timestamp.fromDate(dueDate),
     'assigneeId': assigneeId,
+    'comments': comments
+        .map((e) => CommentModel.fromEntity(e).toJson())
+        .toList(),
   };
 
   factory TaskModel.fromEntity(TaskEntity entity) {
@@ -45,8 +56,10 @@ class TaskModel extends TaskEntity {
       title: entity.title,
       description: entity.description,
       status: entity.status,
+      priority: entity.priority,
       dueDate: entity.dueDate,
       assigneeId: entity.assigneeId,
+      comments: entity.comments,
     );
   }
 }

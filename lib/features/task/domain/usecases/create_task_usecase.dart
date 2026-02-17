@@ -21,6 +21,7 @@ class CreateTaskUseCase implements UseCase<TaskEntity, CreateTaskParams> {
       description: params.description,
       dueDate: params.dueDate,
       assigneeId: params.assigneeId,
+      priority: params.priority,
     );
   }
 }
@@ -31,6 +32,7 @@ class CreateTaskParams extends Equatable {
   final String description;
   final DateTime dueDate;
   final String assigneeId;
+  final TaskPriority priority;
 
   const CreateTaskParams({
     required this.projectId,
@@ -38,8 +40,15 @@ class CreateTaskParams extends Equatable {
     required this.description,
     required this.dueDate,
     required this.assigneeId,
+    required this.priority,
   });
 
   @override
-  List<Object> get props => [projectId, title, description, dueDate, assigneeId];
+  List<Object> get props => [
+    projectId,
+    title,
+    description,
+    dueDate,
+    assigneeId,
+  ];
 }

@@ -1,11 +1,14 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:injectable/injectable.dart';
 import '../models/task_model.dart';
+import '../models/comment_model.dart';
 
 abstract class TaskRemoteDataSource {
   Stream<List<TaskModel>> getTasksStream(String projectId);
   Future<TaskModel> createTask(TaskModel task);
   Future<TaskModel> updateTask(TaskModel task);
+  Future<void> deleteTask(String taskId);
+  Future<CommentModel> addComment(String taskId, CommentModel comment);
 }
 
 @LazySingleton(as: TaskRemoteDataSource)
@@ -44,5 +47,18 @@ class TaskRemoteDataSourceImpl implements TaskRemoteDataSource {
   Future<TaskModel> updateTask(TaskModel task) async {
     await _firestore.collection('tasks').doc(task.id).update(task.toJson());
     return task;
+  }
+
+  @override
+  Future<void> deleteTask(String taskId) async {
+    await _firestore.collection('tasks').doc(taskId).delete();
+  }
+
+  @override
+  Future<CommentModel> addComment(String taskId, CommentModel comment) async {
+    await _firestore.collection('tasks').doc(taskId).update({
+      'comments': FieldValue.arrayUnion([comment.toJson()]),
+    });
+    return comment;
   }
 }
