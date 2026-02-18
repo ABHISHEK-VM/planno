@@ -14,6 +14,7 @@ class TaskEntity extends Equatable {
   final TaskPriority priority;
   final DateTime dueDate;
   final String assigneeId;
+  final String lastModifiedBy;
   final List<CommentEntity> comments;
 
   const TaskEntity({
@@ -25,6 +26,7 @@ class TaskEntity extends Equatable {
     required this.priority,
     required this.dueDate,
     required this.assigneeId,
+    this.lastModifiedBy = '',
     required this.comments,
   });
 
@@ -37,6 +39,7 @@ class TaskEntity extends Equatable {
     TaskPriority? priority,
     DateTime? dueDate,
     String? assigneeId,
+    String? lastModifiedBy,
     List<CommentEntity>? comments,
   }) {
     return TaskEntity(
@@ -48,6 +51,7 @@ class TaskEntity extends Equatable {
       priority: priority ?? this.priority,
       dueDate: dueDate ?? this.dueDate,
       assigneeId: assigneeId ?? this.assigneeId,
+      lastModifiedBy: lastModifiedBy ?? this.lastModifiedBy,
       comments: comments ?? this.comments,
     );
   }
@@ -62,6 +66,7 @@ class TaskEntity extends Equatable {
     priority,
     dueDate,
     assigneeId,
+    lastModifiedBy,
     comments,
   ];
 }

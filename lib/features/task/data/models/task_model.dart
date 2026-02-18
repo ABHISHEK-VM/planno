@@ -12,6 +12,7 @@ class TaskModel extends TaskEntity {
     required super.priority,
     required super.dueDate,
     required super.assigneeId,
+    super.lastModifiedBy,
     required super.comments,
   });
 
@@ -27,6 +28,7 @@ class TaskModel extends TaskEntity {
           : TaskPriority.medium,
       dueDate: (json['dueDate'] as Timestamp).toDate(),
       assigneeId: json['assigneeId'] as String,
+      lastModifiedBy: json['lastModifiedBy'] as String? ?? '',
       comments:
           (json['comments'] as List<dynamic>?)
               ?.map((e) => CommentModel.fromJson(e as Map<String, dynamic>))
@@ -44,6 +46,7 @@ class TaskModel extends TaskEntity {
     'priority': priority.name,
     'dueDate': Timestamp.fromDate(dueDate),
     'assigneeId': assigneeId,
+    'lastModifiedBy': lastModifiedBy,
     'comments': comments
         .map((e) => CommentModel.fromEntity(e).toJson())
         .toList(),
@@ -59,6 +62,7 @@ class TaskModel extends TaskEntity {
       priority: entity.priority,
       dueDate: entity.dueDate,
       assigneeId: entity.assigneeId,
+      lastModifiedBy: entity.lastModifiedBy,
       comments: entity.comments,
     );
   }

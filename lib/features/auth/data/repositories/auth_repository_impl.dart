@@ -105,8 +105,6 @@ class AuthRepositoryImpl implements AuthRepository {
     try {
       await remoteDataSource.updateFcmToken(token);
       return const Right(null);
-    } on Failure catch (e) {
-      return Left(e);
     } catch (e) {
       return Left(ServerFailure(e.toString()));
     }

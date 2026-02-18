@@ -218,9 +218,12 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     try {
       final user = _firebaseAuth.currentUser;
       if (user != null) {
-        await _firestore.collection('users').doc(user.uid).update({
+        await _firestore.collection('users').doc(user.uid).set({
           'fcmToken': token,
-        });
+          'email': user.email, // Ensure email is also saved if doc is new
+          'name':
+              user.displayName ?? 'User', // Ensure name is saved if doc is new
+        }, SetOptions(merge: true));
       }
     } catch (e) {
       // Ignore if user doc doesn't exist or other errors for now to not block flow
