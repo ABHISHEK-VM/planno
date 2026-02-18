@@ -73,4 +73,42 @@ class AuthRepositoryImpl implements AuthRepository {
   Stream<UserEntity?> get userStream {
     return remoteDataSource.userStream;
   }
+
+  @override
+  Future<Either<Failure, List<UserEntity>>> getUsersByIds(
+    List<String> userIds,
+  ) async {
+    try {
+      final users = await remoteDataSource.getUsersByIds(userIds);
+      return Right(users);
+    } on Failure catch (e) {
+      return Left(e);
+    } catch (e) {
+      return Left(ServerFailure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, List<UserEntity>>> searchUsers(String query) async {
+    try {
+      final users = await remoteDataSource.searchUsers(query);
+      return Right(users);
+    } on Failure catch (e) {
+      return Left(e);
+    } catch (e) {
+      return Left(ServerFailure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> updateFcmToken(String token) async {
+    try {
+      await remoteDataSource.updateFcmToken(token);
+      return const Right(null);
+    } on Failure catch (e) {
+      return Left(e);
+    } catch (e) {
+      return Left(ServerFailure(e.toString()));
+    }
+  }
 }

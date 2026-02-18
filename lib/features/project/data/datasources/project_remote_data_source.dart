@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:injectable/injectable.dart';
 import 'package:uuid/uuid.dart';
 import '../../../../core/errors/failures.dart';
+import '../../domain/entities/member_entity.dart';
 import '../models/project_model.dart';
 
 abstract class ProjectRemoteDataSource {
@@ -11,6 +12,7 @@ abstract class ProjectRemoteDataSource {
   Future<ProjectModel> createProject(String name, String description);
   Future<ProjectModel> updateProject(ProjectModel project);
   Future<void> deleteProject(String projectId);
+  Future<void> addMember(String projectId, MemberEntity member);
 }
 
 @LazySingleton(as: ProjectRemoteDataSource)
@@ -21,6 +23,8 @@ class ProjectRemoteDataSourceImpl implements ProjectRemoteDataSource {
   ProjectRemoteDataSourceImpl(this._firestore, this._firebaseAuth);
 
   @override
+  @override
+  @override
   Stream<List<ProjectModel>> getProjects() {
     final user = _firebaseAuth.currentUser;
     if (user == null) {
@@ -29,8 +33,8 @@ class ProjectRemoteDataSourceImpl implements ProjectRemoteDataSource {
 
     return _firestore
         .collection('projects')
-        .where('userId', isEqualTo: user.uid)
-        .orderBy('createdAt', descending: true)
+        .where('memberIds', arrayContains: user.uid)
+        // .orderBy('createdAt', descending: true) // Temporarily disabled to check index
         .snapshots()
         .map((snapshot) {
           return snapshot.docs
@@ -52,6 +56,14 @@ class ProjectRemoteDataSourceImpl implements ProjectRemoteDataSource {
         name: name,
         description: description,
         createdAt: DateTime.now(),
+        memberIds: [user.uid],
+        members: [
+          MemberEntity(
+            id: user.uid,
+            name: user.displayName ?? 'Unknown',
+            email: user.email ?? 'Unknown',
+          ),
+        ],
       );
 
       await _firestore
@@ -83,6 +95,27 @@ class ProjectRemoteDataSourceImpl implements ProjectRemoteDataSource {
   Future<void> deleteProject(String projectId) async {
     try {
       await _firestore.collection('projects').doc(projectId).delete();
+    } catch (e) {
+      throw ServerFailure(e.toString());
+    }
+  }
+
+  @override
+  Future<void> addMember(String projectId, MemberEntity member) async {
+    try {
+      final projectRef = _firestore.collection('projects').doc(projectId);
+
+      await _firestore.runTransaction((transaction) async {
+        final snapshot = await transaction.get(projectRef);
+        if (!snapshot.exists) {
+          throw Exception('Project not found');
+        }
+
+        transaction.update(projectRef, {
+          'memberIds': FieldValue.arrayUnion([member.id]),
+          'members': FieldValue.arrayUnion([member.toJson()]),
+        });
+      });
     } catch (e) {
       throw ServerFailure(e.toString());
     }

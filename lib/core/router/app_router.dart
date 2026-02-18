@@ -2,14 +2,16 @@ import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:injectable/injectable.dart';
 import 'package:planno/features/auth/domain/repositories/auth_repository.dart';
+import 'package:planno/features/project/domain/entities/project_entity.dart';
 import 'package:planno/features/task/domain/entities/task_entity.dart';
 import 'package:planno/features/task/presentation/pages/kanban_board_page.dart';
 import 'package:planno/features/task/presentation/pages/task_details_page.dart';
 
-import '../../features/auth/presentation/pages/login_page.dart';
-import '../../features/auth/presentation/pages/signup_page.dart';
-import '../../features/auth/presentation/pages/profile_page.dart';
-import '../../features/project/presentation/pages/dashboard_page.dart';
+import 'package:planno/features/auth/presentation/pages/login_page.dart';
+import 'package:planno/features/auth/presentation/pages/signup_page.dart';
+import 'package:planno/features/auth/presentation/pages/profile_page.dart';
+import 'package:planno/features/project/presentation/pages/dashboard_page.dart';
+import 'package:planno/features/project/presentation/pages/project_members_page.dart';
 
 part 'app_router.gr.dart';
 
@@ -38,6 +40,10 @@ class AppRouter extends _$AppRouter {
       guards: [AuthGuard(_authRepository)],
     ),
     AutoRoute(page: ProfileRoute.page, guards: [AuthGuard(_authRepository)]),
+    AutoRoute(
+      page: ProjectMembersRoute.page,
+      guards: [AuthGuard(_authRepository)],
+    ),
   ];
 }
 

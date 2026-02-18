@@ -5,7 +5,8 @@ class CommentModel extends CommentEntity {
   const CommentModel({
     required super.id,
     required super.content,
-    required super.authorId,
+    required super.userId,
+    required super.userName,
     required super.createdAt,
   });
 
@@ -13,7 +14,8 @@ class CommentModel extends CommentEntity {
     return CommentModel(
       id: json['id'] as String,
       content: json['content'] as String,
-      authorId: json['authorId'] as String,
+      userId: json['userId'] as String,
+      userName: json['userName'] as String,
       createdAt: (json['createdAt'] as Timestamp).toDate(),
     );
   }
@@ -21,7 +23,8 @@ class CommentModel extends CommentEntity {
   Map<String, dynamic> toJson() => <String, dynamic>{
     'id': id,
     'content': content,
-    'authorId': authorId,
+    'userId': userId,
+    'userName': userName,
     'createdAt': Timestamp.fromDate(createdAt),
   };
 
@@ -29,7 +32,8 @@ class CommentModel extends CommentEntity {
     return CommentModel(
       id: entity.id,
       content: entity.content,
-      authorId: entity.authorId,
+      userId: entity.userId,
+      userName: entity.userName,
       createdAt: entity.createdAt,
     );
   }

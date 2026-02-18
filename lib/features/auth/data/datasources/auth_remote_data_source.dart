@@ -15,6 +15,9 @@ abstract class AuthRemoteDataSource {
   Future<void> logout();
   Future<UserModel> getCurrentUser();
   Stream<UserModel?> get userStream;
+  Future<List<UserModel>> getUsersByIds(List<String> userIds);
+  Future<List<UserModel>> searchUsers(String query);
+  Future<void> updateFcmToken(String token);
 }
 
 @LazySingleton(as: AuthRemoteDataSource)
@@ -160,5 +163,67 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         );
       });
     });
+  }
+
+  @override
+  Future<List<UserModel>> getUsersByIds(List<String> userIds) async {
+    if (userIds.isEmpty) return [];
+    try {
+      // Firestore whereIn limit is 10. For now assuming < 10 or implementing chunks if needed later.
+      // A better production approach is to chunk the list.
+      final List<List<String>> chunks = [];
+      for (var i = 0; i < userIds.length; i += 10) {
+        chunks.add(
+          userIds.sublist(i, i + 10 > userIds.length ? userIds.length : i + 10),
+        );
+      }
+
+      final List<UserModel> users = [];
+      for (final chunk in chunks) {
+        final snapshot = await _firestore
+            .collection('users')
+            .where(FieldPath.documentId, whereIn: chunk)
+            .get();
+
+        users.addAll(
+          snapshot.docs.map((doc) => UserModel.fromJson(doc.data())),
+        );
+      }
+      return users;
+    } catch (e) {
+      throw ServerFailure(e.toString());
+    }
+  }
+
+  @override
+  Future<List<UserModel>> searchUsers(String query) async {
+    try {
+      final snapshot = await _firestore
+          .collection('users')
+          .where('email', isGreaterThanOrEqualTo: query)
+          .where('email', isLessThan: '$query\uf8ff')
+          .limit(10)
+          .get();
+
+      return snapshot.docs
+          .map((doc) => UserModel.fromJson(doc.data()))
+          .toList();
+    } catch (e) {
+      throw ServerFailure(e.toString());
+    }
+  }
+
+  @override
+  Future<void> updateFcmToken(String token) async {
+    try {
+      final user = _firebaseAuth.currentUser;
+      if (user != null) {
+        await _firestore.collection('users').doc(user.uid).update({
+          'fcmToken': token,
+        });
+      }
+    } catch (e) {
+      // Ignore if user doc doesn't exist or other errors for now to not block flow
+    }
   }
 }

@@ -26,7 +26,7 @@ class TaskRemoteDataSourceImpl implements TaskRemoteDataSource {
         .map((snapshot) {
           return snapshot.docs.map((doc) {
             final data = doc.data();
-            data['id'] = doc.id; // Ensure ID is set from doc ID
+            data['id'] = doc.id;
             return TaskModel.fromJson(data);
           }).toList();
         });

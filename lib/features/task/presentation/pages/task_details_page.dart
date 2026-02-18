@@ -6,15 +6,19 @@ import 'package:intl/intl.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import 'package:uuid/uuid.dart';
+import '../../../project/domain/entities/project_entity.dart';
 import '../../domain/entities/task_entity.dart';
 import '../../domain/entities/comment_entity.dart';
 import '../bloc/task_bloc.dart';
+import '../../../auth/presentation/bloc/auth_bloc.dart';
+import '../../../auth/domain/entities/user_entity.dart';
 
 @RoutePage()
 class TaskDetailsPage extends StatefulWidget {
   final TaskEntity task;
+  final ProjectEntity project;
 
-  const TaskDetailsPage({super.key, required this.task});
+  const TaskDetailsPage({super.key, required this.task, required this.project});
 
   @override
   State<TaskDetailsPage> createState() => _TaskDetailsPageState();
@@ -26,6 +30,7 @@ class _TaskDetailsPageState extends State<TaskDetailsPage> {
   late TaskPriority _priority;
   late TaskStatus _status;
   late DateTime _dueDate;
+  late String _assigneeId;
   final TextEditingController _commentController = TextEditingController();
   bool _isEditing = false;
 
@@ -39,6 +44,7 @@ class _TaskDetailsPageState extends State<TaskDetailsPage> {
     _priority = widget.task.priority;
     _status = widget.task.status;
     _dueDate = widget.task.dueDate;
+    _assigneeId = widget.task.assigneeId;
   }
 
   @override
@@ -59,6 +65,7 @@ class _TaskDetailsPageState extends State<TaskDetailsPage> {
         _priority = widget.task.priority;
         _status = widget.task.status;
         _dueDate = widget.task.dueDate;
+        _assigneeId = widget.task.assigneeId;
       }
     });
   }
@@ -85,6 +92,7 @@ class _TaskDetailsPageState extends State<TaskDetailsPage> {
         priority: _priority,
         status: _status,
         dueDate: _dueDate,
+        assigneeId: _assigneeId,
       );
       context.read<TaskBloc>().add(TaskUpdate(updatedTask));
       setState(() {
@@ -104,10 +112,17 @@ class _TaskDetailsPageState extends State<TaskDetailsPage> {
   }
 
   void _addComment() {
-    if (_commentController.text.isNotEmpty) {
+    final authState = context.read<AuthBloc>().state;
+    UserEntity? user;
+    if (authState is AuthAuthenticated) {
+      user = authState.user;
+    }
+
+    if (_commentController.text.isNotEmpty && user != null) {
       final comment = CommentEntity(
         id: const Uuid().v4(),
-        authorId: 'Current User', // Replace with actual user ID
+        userId: user.id,
+        userName: user.name,
         content: _commentController.text,
         createdAt: DateTime.now(),
       );
@@ -159,6 +174,8 @@ class _TaskDetailsPageState extends State<TaskDetailsPage> {
                   _buildPriorityDropdown(updatedTask),
                   SizedBox(height: 16.h),
                   _buildDescriptionField(updatedTask),
+                  SizedBox(height: 16.h),
+                  _buildAssigneeSection(updatedTask),
                   SizedBox(height: 24.h),
                   _buildDateSection(updatedTask),
                   SizedBox(height: 24.h),
@@ -272,6 +289,72 @@ class _TaskDetailsPageState extends State<TaskDetailsPage> {
     );
   }
 
+  Widget _buildAssigneeSection(TaskEntity task) {
+    if (_isEditing) {
+      String resolvedAssigneeId = _assigneeId;
+
+      // Handle legacy 'current_user' value
+      if (resolvedAssigneeId == 'current_user') {
+        final authState = context.read<AuthBloc>().state;
+        if (authState is AuthAuthenticated) {
+          resolvedAssigneeId = authState.user.id;
+        }
+      }
+
+      // Verify the ID exists in members
+      final memberExists = widget.project.members.any(
+        (m) => m.id == resolvedAssigneeId,
+      );
+      if (!memberExists && resolvedAssigneeId.isNotEmpty) {
+        resolvedAssigneeId = '';
+      }
+
+      return DropdownButtonFormField<String>(
+        value: resolvedAssigneeId.isEmpty ? null : resolvedAssigneeId,
+        decoration: const InputDecoration(labelText: 'Assignee'),
+        items: [
+          const DropdownMenuItem(value: '', child: Text('Unassigned')),
+          ...widget.project.members.map((member) {
+            return DropdownMenuItem(value: member.id, child: Text(member.name));
+          }),
+        ],
+        onChanged: (value) {
+          setState(() {
+            _assigneeId = value ?? '';
+          });
+        },
+      );
+    }
+
+    // Display logic for non-editing mode
+    final assignee = widget.project.members
+        .where(
+          (m) =>
+              m.id == _assigneeId ||
+              (_assigneeId == 'current_user' &&
+                  context.read<AuthBloc>().state is AuthAuthenticated &&
+                  (context.read<AuthBloc>().state as AuthAuthenticated)
+                          .user
+                          .id ==
+                      m.id),
+        )
+        .firstOrNull;
+
+    return Row(
+      children: [
+        const Icon(Icons.person, color: Colors.grey),
+        SizedBox(width: 8.w),
+        Text(
+          'Assignee: ${assignee?.name ?? 'Unassigned'}',
+
+          style: AppTextStyles.bodyMedium.copyWith(
+            color: AppColors.textSecondary,
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildDateSection(TaskEntity task) {
     return InkWell(
       onTap: _isEditing ? () => _selectDate(context) : null,
@@ -314,7 +397,7 @@ class _TaskDetailsPageState extends State<TaskDetailsPage> {
       children: task.comments.map((comment) {
         return ListTile(
           leading: const CircleAvatar(child: Icon(Icons.person)),
-          title: Text(comment.authorId), // Placeholder for author name
+          title: Text(comment.userName),
           subtitle: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [

@@ -36,3 +36,13 @@ class ProjectDelete extends ProjectEvent {
   @override
   List<Object> get props => [projectId];
 }
+
+class ProjectAddMember extends ProjectEvent {
+  final String projectId;
+  final MemberEntity member;
+
+  const ProjectAddMember({required this.projectId, required this.member});
+
+  @override
+  List<Object> get props => [projectId, member];
+}

@@ -10,6 +10,9 @@ import 'package:planno/features/project/domain/usecases/get_projects_usecase.dar
 import 'package:planno/features/project/domain/usecases/update_project_usecase.dart';
 import 'package:planno/features/project/presentation/bloc/project_bloc.dart';
 
+import 'package:planno/features/project/domain/usecases/add_member_usecase.dart';
+import 'package:planno/features/project/domain/entities/member_entity.dart';
+
 class MockGetProjectsUseCase extends Mock implements GetProjectsUseCase {}
 
 class MockCreateProjectUseCase extends Mock implements CreateProjectUseCase {}
@@ -18,23 +21,28 @@ class MockUpdateProjectUseCase extends Mock implements UpdateProjectUseCase {}
 
 class MockDeleteProjectUseCase extends Mock implements DeleteProjectUseCase {}
 
+class MockAddMemberUseCase extends Mock implements AddMemberUseCase {}
+
 void main() {
   late ProjectBloc projectBloc;
   late MockGetProjectsUseCase mockGetProjectsUseCase;
   late MockCreateProjectUseCase mockCreateProjectUseCase;
   late MockUpdateProjectUseCase mockUpdateProjectUseCase;
   late MockDeleteProjectUseCase mockDeleteProjectUseCase;
+  late MockAddMemberUseCase mockAddMemberUseCase;
 
   setUp(() {
     mockGetProjectsUseCase = MockGetProjectsUseCase();
     mockCreateProjectUseCase = MockCreateProjectUseCase();
     mockUpdateProjectUseCase = MockUpdateProjectUseCase();
     mockDeleteProjectUseCase = MockDeleteProjectUseCase();
+    mockAddMemberUseCase = MockAddMemberUseCase();
     projectBloc = ProjectBloc(
       mockGetProjectsUseCase,
       mockCreateProjectUseCase,
       mockUpdateProjectUseCase,
       mockDeleteProjectUseCase,
+      mockAddMemberUseCase,
     );
 
     // Register fallback value for any params if needed, though not strictly required for primitive types
@@ -44,6 +52,12 @@ void main() {
     );
     registerFallbackValue(UpdateProjectParams(project: ProjectEntity.empty()));
     registerFallbackValue(const DeleteProjectParams(projectId: 'dummy'));
+    registerFallbackValue(
+      const AddMemberParams(
+        projectId: 'dummy',
+        member: MemberEntity(id: 'dummy', name: 'dummy', email: 'dummy'),
+      ),
+    );
   });
 
   tearDown(() {
@@ -56,6 +70,8 @@ void main() {
     name: 'Test Project',
     description: 'Test Description',
     createdAt: DateTime.now(),
+    memberIds: const ['user1'],
+    members: const [],
   );
 
   test('initial state should be ProjectInitial', () {

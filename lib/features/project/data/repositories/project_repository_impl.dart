@@ -3,6 +3,7 @@ import 'package:injectable/injectable.dart';
 
 import '../../../../core/errors/failures.dart';
 import '../../domain/entities/project_entity.dart';
+import '../../domain/entities/member_entity.dart';
 import '../../domain/repositories/project_repository.dart';
 import '../datasources/project_remote_data_source.dart';
 import '../models/project_model.dart';
@@ -57,6 +58,19 @@ class ProjectRepositoryImpl implements ProjectRepository {
   Future<Either<Failure, void>> deleteProject(String projectId) async {
     try {
       await remoteDataSource.deleteProject(projectId);
+      return const Right(null);
+    } catch (e) {
+      return Left(ServerFailure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> addMember(
+    String projectId,
+    MemberEntity member,
+  ) async {
+    try {
+      await remoteDataSource.addMember(projectId, member);
       return const Right(null);
     } catch (e) {
       return Left(ServerFailure(e.toString()));

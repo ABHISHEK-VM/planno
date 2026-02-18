@@ -110,7 +110,7 @@ class TaskBloc extends Bloc<TaskEvent, TaskState> {
     final result = await _addCommentUseCase(
       AddCommentParams(taskId: event.taskId, comment: event.comment),
     );
-    result.fold(
+    result.fold( 
       (failure) => emit(TaskError(failure.message)),
       (_) {}, // Stream will update UI
     );

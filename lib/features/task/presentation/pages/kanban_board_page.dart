@@ -8,32 +8,65 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../domain/entities/task_entity.dart';
 import '../bloc/task_bloc.dart';
+import '../../../../core/util/date_extensions.dart';
 import 'task_details_page.dart';
+
+import 'package:planno/features/project/presentation/bloc/project_bloc.dart';
+import 'package:planno/features/project/domain/entities/project_entity.dart';
+import 'package:planno/features/project/domain/entities/member_entity.dart';
+import 'package:planno/core/router/app_router.dart';
+import '../../../../features/auth/presentation/bloc/auth_bloc.dart';
 
 @RoutePage()
 class KanbanBoardPage extends StatelessWidget {
-  final String projectId;
+  final ProjectEntity project;
 
-  const KanbanBoardPage({super.key, required this.projectId});
+  const KanbanBoardPage({
+    super.key,
+    required this.project,
+    required String projectId,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (context) =>
-          getIt<TaskBloc>()..add(TasksSubscriptionRequested(projectId)),
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider(
+          create: (context) =>
+              getIt<TaskBloc>()..add(TasksSubscriptionRequested(project.id)),
+        ),
+        BlocProvider(
+          create: (context) => getIt<ProjectBloc>()..add(ProjectLoadAll()),
+        ),
+      ],
       child: Scaffold(
-        appBar: AppBar(title: const Text('Task Board')),
-        body: BlocBuilder<TaskBloc, TaskState>(
-          builder: (context, state) {
-            if (state is TaskLoading) {
-              return const Center(child: CircularProgressIndicator());
-            } else if (state is TaskLoaded) {
-              return _KanbanView(state);
-            } else if (state is TaskError) {
-              return Center(child: Text(state.message));
-            }
-            return const SizedBox();
+        appBar: AppBar(
+          title: const Text('Task Board'),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.people),
+              onPressed: () {
+                context.router.push(ProjectMembersRoute(project: project));
+              },
+            ),
+          ],
+        ),
+        body: BlocListener<ProjectBloc, ProjectState>(
+          listener: (context, state) {
+            // State listener
           },
+          child: BlocBuilder<TaskBloc, TaskState>(
+            builder: (context, state) {
+              if (state is TaskLoading) {
+                return const Center(child: CircularProgressIndicator());
+              } else if (state is TaskLoaded) {
+                return _KanbanView(state, project);
+              } else if (state is TaskError) {
+                return Center(child: Text(state.message));
+              }
+              return const SizedBox();
+            },
+          ),
         ),
         floatingActionButton: Builder(
           builder: (context) {
@@ -51,9 +84,44 @@ class KanbanBoardPage extends StatelessWidget {
   }
 
   void _showCreateTaskBottomSheet(BuildContext context) {
+    // Provide UserBloc here or use getIt inside if not provided globally/above.
+    // Since KanbanBoard doesn't provide UserBloc, we create one locally for this sheet.
+    // Or we use getIt directly. Since it's a modal, we can wrap it in BlocProvider.
+    // But we need to load members.
+
+    // We will use a local variable to store selected assignee.
+    // Default to current user (TODO: get current user ID).
+    // For now, let's just default to null or 'current_user'.
+
+    // Actually, we should use UserBloc to fetch members.
+    // Use ProjectBloc to get the latest project members
+    final projectBloc = context.read<ProjectBloc>();
+    List<MemberEntity> members = project.members;
+
+    if (projectBloc.state is ProjectLoaded) {
+      final loadedProjects = (projectBloc.state as ProjectLoaded).projects;
+      final updatedProject = loadedProjects.cast<ProjectEntity>().firstWhere(
+        (p) => p.id == project.id,
+        orElse: () => project,
+      );
+      members = updatedProject.members;
+    }
+
+    final taskBloc = context.read<TaskBloc>();
     final titleController = TextEditingController();
     final descController = TextEditingController();
     DateTime selectedDate = DateTime.now().add(const Duration(days: 1));
+    TaskPriority selectedPriority = TaskPriority.medium;
+
+    // Initialize assignee to current user if they are a member
+    String assigneeId = '';
+    final authState = context.read<AuthBloc>().state;
+    if (authState is AuthAuthenticated) {
+      final currentUserId = authState.user.id;
+      if (members.any((m) => m.id == currentUserId)) {
+        assigneeId = currentUserId;
+      }
+    }
 
     showModalBottomSheet(
       context: context,
@@ -62,74 +130,170 @@ class KanbanBoardPage extends StatelessWidget {
         borderRadius: BorderRadius.vertical(top: Radius.circular(20.r)),
       ),
       builder: (sheetContext) {
-        return Padding(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(sheetContext).viewInsets.bottom,
-          ),
-          child: SingleChildScrollView(
-            child: Padding(
-              padding: EdgeInsets.fromLTRB(16.w, 24.h, 16.w, 24.h),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Text('New Task', style: AppTextStyles.heading2),
-                  SizedBox(height: 16.h),
-                  TextField(
-                    controller: titleController,
-                    decoration: InputDecoration(
-                      labelText: 'Title',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12.r),
-                      ),
-                    ),
-                    textCapitalization: TextCapitalization.sentences,
-                  ),
-                  SizedBox(height: 16.h),
-                  TextField(
-                    controller: descController,
-                    decoration: InputDecoration(
-                      labelText: 'Description',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12.r),
-                      ),
-                    ),
-                    maxLines: 3,
-                    textCapitalization: TextCapitalization.sentences,
-                  ),
-                  SizedBox(height: 24.h),
-                  ElevatedButton(
-                    onPressed: () {
-                      if (titleController.text.isNotEmpty) {
-                        context.read<TaskBloc>().add(
-                          TaskCreate(
-                            projectId: projectId,
-                            title: titleController.text,
-                            description: descController.text,
-                            dueDate: selectedDate,
-                            assigneeId: 'current_user',
-                            priority: TaskPriority.medium,
-                          ),
-                        );
-                        Navigator.pop(sheetContext);
-                      }
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      padding: EdgeInsets.symmetric(vertical: 16.h),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12.r),
-                      ),
-                    ),
-                    child: const Text(
-                      'Create Task',
-                      style: TextStyle(color: Colors.white),
-                    ),
-                  ),
-                ],
+        return StatefulBuilder(
+          builder: (context, setBottomSheetState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(sheetContext).viewInsets.bottom,
               ),
-            ),
-          ),
+              child: SingleChildScrollView(
+                child: Padding(
+                  padding: EdgeInsets.fromLTRB(16.w, 24.h, 16.w, 24.h),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Text('New Task', style: AppTextStyles.heading2),
+                      SizedBox(height: 16.h),
+                      TextField(
+                        controller: titleController,
+                        decoration: InputDecoration(
+                          labelText: 'Title',
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12.r),
+                          ),
+                        ),
+                        textCapitalization: TextCapitalization.sentences,
+                      ),
+                      SizedBox(height: 16.h),
+                      TextField(
+                        controller: descController,
+                        decoration: InputDecoration(
+                          labelText: 'Description',
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12.r),
+                          ),
+                        ),
+                        maxLines: 3,
+                        textCapitalization: TextCapitalization.sentences,
+                      ),
+                      SizedBox(height: 16.h),
+                      // Assignee Dropdown
+                      DropdownButtonFormField<String>(
+                        value: assigneeId.isEmpty ? null : assigneeId,
+                        decoration: InputDecoration(
+                          labelText: 'Assignee',
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12.r),
+                          ),
+                        ),
+                        items: [
+                          const DropdownMenuItem(
+                            value: '',
+                            child: Text('Unassigned'),
+                          ),
+                          ...members.map((member) {
+                            return DropdownMenuItem(
+                              value: member.id,
+                              child: Text(member.name),
+                            );
+                          }),
+                        ],
+                        onChanged: (value) {
+                          setBottomSheetState(() {
+                            assigneeId = value ?? '';
+                          });
+                        },
+                      ),
+                      SizedBox(height: 16.h),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: DropdownButtonFormField<TaskPriority>(
+                              value: selectedPriority,
+                              decoration: InputDecoration(
+                                labelText: 'Priority',
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12.r),
+                                ),
+                              ),
+                              items: TaskPriority.values.map((priority) {
+                                return DropdownMenuItem(
+                                  value: priority,
+                                  child: Text(
+                                    priority.name[0].toUpperCase() +
+                                        priority.name.substring(1),
+                                  ),
+                                );
+                              }).toList(),
+                              onChanged: (value) {
+                                if (value != null) {
+                                  setBottomSheetState(() {
+                                    selectedPriority = value;
+                                  });
+                                }
+                              },
+                            ),
+                          ),
+                          SizedBox(width: 16.w),
+                          Expanded(
+                            child: InkWell(
+                              onTap: () async {
+                                final date = await showDatePicker(
+                                  context: context,
+                                  initialDate: selectedDate,
+                                  firstDate: DateTime.now(),
+                                  lastDate: DateTime.now().add(
+                                    const Duration(days: 365),
+                                  ),
+                                );
+                                if (date != null) {
+                                  setBottomSheetState(() {
+                                    selectedDate = date;
+                                  });
+                                }
+                              },
+                              child: InputDecorator(
+                                decoration: InputDecoration(
+                                  labelText: 'Due Date',
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12.r),
+                                  ),
+                                ),
+                                child: Text(
+                                  selectedDate.formattedDate,
+                                  style: AppTextStyles.bodyMedium,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      SizedBox(height: 24.h),
+                      ElevatedButton(
+                        onPressed: () {
+                          if (titleController.text.isNotEmpty) {
+                            taskBloc.add(
+                              TaskCreate(
+                                projectId: project.id,
+                                title: titleController.text,
+                                description: descController.text,
+                                dueDate: selectedDate,
+                                assigneeId: assigneeId,
+                                priority: selectedPriority,
+                              ),
+                            );
+                            Navigator.pop(sheetContext);
+                          }
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          padding: EdgeInsets.symmetric(vertical: 16.h),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12.r),
+                          ),
+                        ),
+                        child: const Text(
+                          'Create Task',
+                          style: TextStyle(color: Colors.white),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
         );
       },
     );
@@ -138,8 +302,9 @@ class KanbanBoardPage extends StatelessWidget {
 
 class _KanbanView extends StatefulWidget {
   final TaskLoaded state;
+  final ProjectEntity project;
 
-  const _KanbanView(this.state);
+  const _KanbanView(this.state, this.project);
 
   @override
   State<_KanbanView> createState() => _KanbanViewState();
@@ -223,6 +388,16 @@ class _KanbanViewState extends State<_KanbanView> {
                   title: 'To Do',
                   status: TaskStatus.todo,
                   tasks: widget.state.todoTasks,
+                  members: (context.read<ProjectBloc>().state is ProjectLoaded)
+                      ? (context.read<ProjectBloc>().state as ProjectLoaded)
+                            .projects
+                            .cast<ProjectEntity>()
+                            .firstWhere(
+                              (p) => p.id == widget.project.id,
+                              orElse: () => widget.project,
+                            )
+                            .members
+                      : widget.project.members,
                   color: AppColors.todo,
                   onDragUpdate: _onDragUpdate,
                   onDragEnd: _onDragEnd,
@@ -232,6 +407,16 @@ class _KanbanViewState extends State<_KanbanView> {
                   title: 'In Progress',
                   status: TaskStatus.inProgress,
                   tasks: widget.state.inProgressTasks,
+                  members: (context.read<ProjectBloc>().state is ProjectLoaded)
+                      ? (context.read<ProjectBloc>().state as ProjectLoaded)
+                            .projects
+                            .cast<ProjectEntity>()
+                            .firstWhere(
+                              (p) => p.id == widget.project.id,
+                              orElse: () => widget.project,
+                            )
+                            .members
+                      : widget.project.members,
                   color: AppColors.inProgress,
                   onDragUpdate: _onDragUpdate,
                   onDragEnd: _onDragEnd,
@@ -241,6 +426,16 @@ class _KanbanViewState extends State<_KanbanView> {
                   title: 'Done',
                   status: TaskStatus.done,
                   tasks: widget.state.doneTasks,
+                  members: (context.read<ProjectBloc>().state is ProjectLoaded)
+                      ? (context.read<ProjectBloc>().state as ProjectLoaded)
+                            .projects
+                            .cast<ProjectEntity>()
+                            .firstWhere(
+                              (p) => p.id == widget.project.id,
+                              orElse: () => widget.project,
+                            )
+                            .members
+                      : widget.project.members,
                   color: AppColors.done,
                   onDragUpdate: _onDragUpdate,
                   onDragEnd: _onDragEnd,
@@ -258,6 +453,7 @@ class _TaskColumn extends StatelessWidget {
   final String title;
   final TaskStatus status;
   final List<TaskEntity> tasks;
+  final List<MemberEntity> members;
   final Color color;
   final Function(DragUpdateDetails) onDragUpdate;
   final Function(DraggableDetails) onDragEnd;
@@ -266,6 +462,7 @@ class _TaskColumn extends StatelessWidget {
     required this.title,
     required this.status,
     required this.tasks,
+    required this.members,
     required this.color,
     required this.onDragUpdate,
     required this.onDragEnd,
@@ -330,6 +527,7 @@ class _TaskColumn extends StatelessWidget {
                           .map(
                             (task) => _TaskCard(
                               task: task,
+                              members: members,
                               onDragUpdate: onDragUpdate,
                               onDragEnd: onDragEnd,
                             ),
@@ -348,47 +546,61 @@ class _TaskColumn extends StatelessWidget {
 
 class _TaskCard extends StatelessWidget {
   final TaskEntity task;
+  final List<MemberEntity> members;
   final Function(DragUpdateDetails) onDragUpdate;
   final Function(DraggableDetails) onDragEnd;
 
   const _TaskCard({
     required this.task,
+    required this.members,
     required this.onDragUpdate,
     required this.onDragEnd,
   });
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () {
-        final taskBloc = context.read<TaskBloc>();
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => BlocProvider.value(
-              value: taskBloc,
-              child: TaskDetailsPage(task: task),
-            ),
+    return LongPressDraggable<TaskEntity>(
+      data: task,
+      onDragUpdate: onDragUpdate,
+      onDragEnd: onDragEnd,
+      feedback: Material(
+        elevation: 4,
+        borderRadius: BorderRadius.circular(12.r),
+        child: Container(
+          width: 280.w,
+          padding: EdgeInsets.all(12.w),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12.r),
           ),
-        );
-      },
-      child: LongPressDraggable<TaskEntity>(
-        data: task,
-        onDragUpdate: onDragUpdate,
-        onDragEnd: onDragEnd,
-        feedback: Material(
-          elevation: 4,
-          borderRadius: BorderRadius.circular(12.r),
-          child: Container(
-            width: 280.w,
-            padding: EdgeInsets.all(12.w),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12.r),
-            ),
-            child: Text(task.title, style: AppTextStyles.bodyLarge),
-          ),
+          child: Text(task.title, style: AppTextStyles.bodyLarge),
         ),
+      ),
+      child: GestureDetector(
+        onTap: () {
+          final taskBloc = context.read<TaskBloc>();
+          final projectBloc = context.read<ProjectBloc>();
+
+          ProjectEntity project = ProjectEntity.empty();
+          if (projectBloc.state is ProjectLoaded) {
+            project = (projectBloc.state as ProjectLoaded).projects
+                .cast<ProjectEntity>()
+                .firstWhere(
+                  (p) => p.id == task.projectId,
+                  orElse: () => ProjectEntity.empty(),
+                );
+          }
+
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => BlocProvider.value(
+                value: taskBloc,
+                child: TaskDetailsPage(task: task, project: project),
+              ),
+            ),
+          );
+        },
         child: _buildCardContent(context),
       ),
     );
@@ -439,6 +651,38 @@ class _TaskCard extends StatelessWidget {
                   ),
                 ),
               ),
+              if (task.assigneeId.isNotEmpty) ...[
+                Builder(
+                  builder: (context) {
+                    final assignee = members
+                        .where((m) => m.id == task.assigneeId)
+                        .firstOrNull;
+                    if (assignee != null) {
+                      return Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          CircleAvatar(
+                            radius: 12.r,
+                            backgroundColor: AppColors.primary.withOpacity(0.1),
+                            child: Text(
+                              assignee.name.isNotEmpty
+                                  ? assignee.name[0].toUpperCase()
+                                  : '?',
+                              style: AppTextStyles.bodySmall.copyWith(
+                                color: AppColors.primary,
+                                fontSize: 10.sp,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                          SizedBox(width: 8.w),
+                        ],
+                      );
+                    }
+                    return const SizedBox.shrink();
+                  },
+                ),
+              ],
               PopupMenuButton<String>(
                 icon: Icon(Icons.more_horiz, size: 20.sp, color: Colors.grey),
                 onSelected: (value) {

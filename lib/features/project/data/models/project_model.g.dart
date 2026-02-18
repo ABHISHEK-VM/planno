@@ -12,6 +12,11 @@ ProjectModel _$ProjectModelFromJson(Map<String, dynamic> json) => ProjectModel(
       name: json['name'] as String,
       description: json['description'] as String,
       createdAt: DateTime.parse(json['createdAt'] as String),
+      memberIds:
+          (json['memberIds'] as List<dynamic>).map((e) => e as String).toList(),
+      members: (json['members'] as List<dynamic>)
+          .map((e) => MemberEntity.fromJson(e as Map<String, dynamic>))
+          .toList(),
     );
 
 Map<String, dynamic> _$ProjectModelToJson(ProjectModel instance) =>
@@ -21,4 +26,6 @@ Map<String, dynamic> _$ProjectModelToJson(ProjectModel instance) =>
       'name': instance.name,
       'description': instance.description,
       'createdAt': instance.createdAt.toIso8601String(),
+      'memberIds': instance.memberIds,
+      'members': instance.members,
     };

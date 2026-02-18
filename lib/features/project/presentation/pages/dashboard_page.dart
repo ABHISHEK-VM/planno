@@ -7,6 +7,7 @@ import 'package:shimmer/shimmer.dart';
 import '../../../../core/di/injection.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
+import '../../../../core/util/date_extensions.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../bloc/project_bloc.dart';
 
@@ -106,7 +107,10 @@ class DashboardPage extends StatelessWidget {
                       borderRadius: BorderRadius.circular(12.r),
                       onTap: () {
                         context.router.push(
-                          KanbanBoardRoute(projectId: project.id),
+                          KanbanBoardRoute(
+                            project: project,
+                            projectId: project.id,
+                          ),
                         );
                       },
                       child: Padding(
@@ -174,7 +178,8 @@ class DashboardPage extends StatelessWidget {
                                 ),
                                 SizedBox(width: 4.w),
                                 Text(
-                                  'Created recently', // Use Intl for real date
+                                  project.createdAt.formattedDate,
+
                                   style: AppTextStyles.bodyMedium.copyWith(
                                     fontSize: 12.sp,
                                   ),
@@ -322,8 +327,11 @@ class DashboardPage extends StatelessWidget {
 
   void _showDeleteConfirmationDialog(BuildContext context, String projectId) {
     showDialog(
+      fullscreenDialog: true,
+
       context: context,
       builder: (dialogContext) => AlertDialog(
+        insetPadding: EdgeInsets.all(1.w),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16.r),
         ),

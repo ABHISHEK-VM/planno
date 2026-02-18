@@ -74,7 +74,8 @@ void main() {
         taskId: 'dummy',
         comment: CommentEntity(
           id: 'c1',
-          authorId: 'u1',
+          userId: 'u1',
+          userName: 'User 1',
           content: 'test',
           createdAt: DateTime.now(),
         ),
@@ -175,7 +176,8 @@ void main() {
         (_) async => Right(
           CommentEntity(
             id: 'c1',
-            authorId: 'u1',
+            userId: 'u1',
+            userName: 'User 1',
             content: 'test',
             createdAt: DateTime.now(),
           ),
@@ -188,7 +190,8 @@ void main() {
         taskId: '1',
         comment: CommentEntity(
           id: 'c1',
-          authorId: 'u1',
+          userId: 'u1',
+          userName: 'User 1',
           content: 'test',
           createdAt: DateTime.now(),
         ),
