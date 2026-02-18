@@ -5,25 +5,59 @@ import 'package:mocktail/mocktail.dart';
 import 'package:planno/core/usecases/usecase.dart';
 import 'package:planno/features/project/domain/entities/project_entity.dart';
 import 'package:planno/features/project/domain/usecases/create_project_usecase.dart';
+import 'package:planno/features/project/domain/usecases/delete_project_usecase.dart';
 import 'package:planno/features/project/domain/usecases/get_projects_usecase.dart';
+import 'package:planno/features/project/domain/usecases/update_project_usecase.dart';
 import 'package:planno/features/project/presentation/bloc/project_bloc.dart';
 
+import 'package:planno/features/project/domain/usecases/add_member_usecase.dart';
+import 'package:planno/features/project/domain/entities/member_entity.dart';
+
 class MockGetProjectsUseCase extends Mock implements GetProjectsUseCase {}
+
 class MockCreateProjectUseCase extends Mock implements CreateProjectUseCase {}
+
+class MockUpdateProjectUseCase extends Mock implements UpdateProjectUseCase {}
+
+class MockDeleteProjectUseCase extends Mock implements DeleteProjectUseCase {}
+
+class MockAddMemberUseCase extends Mock implements AddMemberUseCase {}
 
 void main() {
   late ProjectBloc projectBloc;
   late MockGetProjectsUseCase mockGetProjectsUseCase;
   late MockCreateProjectUseCase mockCreateProjectUseCase;
+  late MockUpdateProjectUseCase mockUpdateProjectUseCase;
+  late MockDeleteProjectUseCase mockDeleteProjectUseCase;
+  late MockAddMemberUseCase mockAddMemberUseCase;
 
   setUp(() {
     mockGetProjectsUseCase = MockGetProjectsUseCase();
     mockCreateProjectUseCase = MockCreateProjectUseCase();
-    projectBloc = ProjectBloc(mockGetProjectsUseCase, mockCreateProjectUseCase);
-    
+    mockUpdateProjectUseCase = MockUpdateProjectUseCase();
+    mockDeleteProjectUseCase = MockDeleteProjectUseCase();
+    mockAddMemberUseCase = MockAddMemberUseCase();
+    projectBloc = ProjectBloc(
+      mockGetProjectsUseCase,
+      mockCreateProjectUseCase,
+      mockUpdateProjectUseCase,
+      mockDeleteProjectUseCase,
+      mockAddMemberUseCase,
+    );
+
     // Register fallback value for any params if needed, though not strictly required for primitive types
     registerFallbackValue(NoParams());
-    registerFallbackValue(const CreateProjectParams(name: 'dummy', description: 'dummy'));
+    registerFallbackValue(
+      const CreateProjectParams(name: 'dummy', description: 'dummy'),
+    );
+    registerFallbackValue(UpdateProjectParams(project: ProjectEntity.empty()));
+    registerFallbackValue(const DeleteProjectParams(projectId: 'dummy'));
+    registerFallbackValue(
+      const AddMemberParams(
+        projectId: 'dummy',
+        member: MemberEntity(id: 'dummy', name: 'dummy', email: 'dummy'),
+      ),
+    );
   });
 
   tearDown(() {
@@ -31,10 +65,13 @@ void main() {
   });
 
   final tProject = ProjectEntity(
-    id: '1', 
-    name: 'Test Project', 
-    description: 'Test Description', 
-    createdAt: DateTime.now()
+    id: '1',
+    userId: 'user1',
+    name: 'Test Project',
+    description: 'Test Description',
+    createdAt: DateTime.now(),
+    memberIds: const ['user1'],
+    members: const [],
   );
 
   test('initial state should be ProjectInitial', () {
@@ -44,8 +81,9 @@ void main() {
   blocTest<ProjectBloc, ProjectState>(
     'emits [ProjectLoading, ProjectLoaded] when data is gotten successfully',
     build: () {
-      when(() => mockGetProjectsUseCase(any()))
-          .thenAnswer((_) async => Right([tProject]));
+      when(
+        () => mockGetProjectsUseCase(any()),
+      ).thenAnswer((_) => Stream.value(Right([tProject])));
       return projectBloc;
     },
     act: (bloc) => bloc.add(ProjectLoadAll()),
@@ -61,16 +99,19 @@ void main() {
   blocTest<ProjectBloc, ProjectState>(
     'emits [ProjectOperationSuccess, ProjectLoading, ProjectLoaded] when project is created successfully',
     build: () {
-      when(() => mockCreateProjectUseCase(any()))
-          .thenAnswer((_) async => Right(tProject));
-      when(() => mockGetProjectsUseCase(any()))
-          .thenAnswer((_) async => Right([tProject]));
+      when(
+        () => mockCreateProjectUseCase(any()),
+      ).thenAnswer((_) async => Right(tProject));
+      when(
+        () => mockGetProjectsUseCase(any()),
+      ).thenAnswer((_) => Stream.value(Right([tProject])));
       return projectBloc;
     },
-    act: (bloc) => bloc.add(const ProjectCreate(name: 'New', description: 'Desc')),
+    act: (bloc) =>
+        bloc.add(const ProjectCreate(name: 'New', description: 'Desc')),
     expect: () => [
       const ProjectOperationSuccess('Project Created Successfully'),
-      ProjectLoading(), // Triggered by subsequent ProjectLoadAll
+      ProjectLoading(),
       ProjectLoaded([tProject]),
     ],
   );

@@ -1,6 +1,9 @@
 import 'package:equatable/equatable.dart';
+import 'comment_entity.dart';
 
 enum TaskStatus { todo, inProgress, done }
+
+enum TaskPriority { low, medium, high }
 
 class TaskEntity extends Equatable {
   final String id;
@@ -8,8 +11,11 @@ class TaskEntity extends Equatable {
   final String title;
   final String description;
   final TaskStatus status;
+  final TaskPriority priority;
   final DateTime dueDate;
   final String assigneeId;
+  final String lastModifiedBy;
+  final List<CommentEntity> comments;
 
   const TaskEntity({
     required this.id,
@@ -17,8 +23,11 @@ class TaskEntity extends Equatable {
     required this.title,
     required this.description,
     required this.status,
+    required this.priority,
     required this.dueDate,
     required this.assigneeId,
+    this.lastModifiedBy = '',
+    required this.comments,
   });
 
   TaskEntity copyWith({
@@ -27,8 +36,11 @@ class TaskEntity extends Equatable {
     String? title,
     String? description,
     TaskStatus? status,
+    TaskPriority? priority,
     DateTime? dueDate,
     String? assigneeId,
+    String? lastModifiedBy,
+    List<CommentEntity>? comments,
   }) {
     return TaskEntity(
       id: id ?? this.id,
@@ -36,11 +48,25 @@ class TaskEntity extends Equatable {
       title: title ?? this.title,
       description: description ?? this.description,
       status: status ?? this.status,
+      priority: priority ?? this.priority,
       dueDate: dueDate ?? this.dueDate,
       assigneeId: assigneeId ?? this.assigneeId,
+      lastModifiedBy: lastModifiedBy ?? this.lastModifiedBy,
+      comments: comments ?? this.comments,
     );
   }
 
   @override
-  List<Object?> get props => [id, projectId, title, description, status, dueDate, assigneeId];
+  List<Object?> get props => [
+    id,
+    projectId,
+    title,
+    description,
+    status,
+    priority,
+    dueDate,
+    assigneeId,
+    lastModifiedBy,
+    comments,
+  ];
 }
